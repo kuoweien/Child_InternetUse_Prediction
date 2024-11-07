@@ -50,41 +50,6 @@ def set_dataset(dataset_type):
     return df_dataset
 
 
-
-
-    # for id in ids:
-    #
-    #     # if file_count > analyze_file_count:
-    #     #     break
-    #
-    #     label = int(df_hbn_instruments[df_hbn_instruments['id'] == id]['sii'].values[0])
-    #
-    #     base_path = os.path.dirname(os.path.realpath(__file__))
-    #     parquet_file_name = 'part-0.parquet'
-    #     parquet_file_path = os.path.join(base_path, 'Dataset', 'series_train.parquet', 'id=' + id, parquet_file_name)
-    #
-    #     if os.path.exists(parquet_file_path):
-    #
-    #         df_motion = pd.read_parquet(parquet_file_path, engine='pyarrow')
-    #
-    #         motion_x = df_motion['X']
-    #         motion_y = df_motion['Y']
-    #         motion_z = df_motion['Z']
-    #         motion＿xyz = np.sqrt(motion_x ** 2 + motion_y ** 2 + motion_z ** 2)
-    #
-    #         # df_dataset.loc[len(df_dataset)] = [motion_x, motion_y, motion_z, label]
-    #         df_dataset.loc[len(df_dataset)] = [motion＿xyz, label]
-    #
-    #         # file_count+=1
-    #
-    #     # x = df_dataset['Motion_XYX']
-    #     # y = df_dataset['Label']
-    #
-    #     # X_train, X_test, y_train, y_test = train_test_split(x, y)
-    #     print('Finish Data Loading')
-    #
-    #     return X_train, X_test, y_train, y_test
-
 def build_CNN_model(train_X, train_y, test_X, test_y):
     print('Start Building NN Model!')
     tf.random.set_seed(42)
