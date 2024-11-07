@@ -5,29 +5,38 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
-def set_dataset(analyze_file_count=1):
+def set_dataset(dataset_type):
 
-    df_hbn_instruments = pd.read_csv('./Dataset/train.csv')
-    df_hbn_instruments = df_hbn_instruments.dropna(subset="sii")
-    ids = df_hbn_instruments['id']
-    # df_dataset = pd.DataFrame(columns=['Motion_X', 'Motion_Y', 'Motion_Z', 'Label'])
+    df_hbn_instruments = None
     df_dataset = pd.DataFrame(columns=['Motion_XYX', 'Label'])
 
-    file_count = 0
+    base_path = os.path.dirname(os.path.realpath(__file__))
 
-    for id in ids:
+    if dataset_type == 'Train':
+        df_hbn_instruments = pd.read_csv('./Dataset/train.csv')
+        dataset_file_path = os.path.join(base_path, 'Dataset', 'series_train.parquet')
 
-        if file_count > analyze_file_count:
-            break
+    elif dataset_type == 'Test':
+        df_hbn_instruments = pd.read_csv('./Dataset/test.csv')
+        dataset_file_path = os.path.join(base_path, 'Dataset', 'series_test.parquet')
 
-        label = int(df_hbn_instruments[df_hbn_instruments['id'] == id]['sii'].values[0])
+    else:
+        print('wrong input: dataset type')
+        return
 
-        base_path = os.path.dirname(os.path.realpath(__file__))
-        parquet_file_name = 'part-0.parquet'
-        parquet_file_path = os.path.join(base_path, 'Dataset', 'series_train.parquet', 'id=' + id, parquet_file_name)
+    if os.path.exists(dataset_file_path):
+        for id_string in os.listdir(dataset_file_path):
+            id = id_string.split('=')[-1]
+            try:
+                sii = int(df_hbn_instruments[df_hbn_instruments['id'] == id]['sii'].values[0])
+            except IndexError:
+                print('IndexError: ID'+id+' have no sii data')
+                continue
+            except KeyError:
+                print('KeyError: ID'+id+' have no sii data')
+                continue
 
-        if os.path.exists(parquet_file_path):
-
+            parquet_file_path = os.path.join(dataset_file_path, id_string, 'part-0.parquet')
             df_motion = pd.read_parquet(parquet_file_path, engine='pyarrow')
 
             motion_x = df_motion['X']
@@ -36,18 +45,48 @@ def set_dataset(analyze_file_count=1):
             motion＿xyz = np.sqrt(motion_x ** 2 + motion_y ** 2 + motion_z ** 2)
 
             # df_dataset.loc[len(df_dataset)] = [motion_x, motion_y, motion_z, label]
-            df_dataset.loc[len(df_dataset)] = [motion＿xyz, label]
+            df_dataset.loc[len(df_dataset)] = [motion＿xyz, sii]
 
-            file_count+=1
+    return df_dataset
 
-        x = df_dataset['Motion_XYX']
-        y = df_dataset['Label']
 
-        X_train, X_test, y_train, y_test = train_test_split(x, y)
 
-        return X_train, X_test, y_train, y_test
+
+    # for id in ids:
+    #
+    #     # if file_count > analyze_file_count:
+    #     #     break
+    #
+    #     label = int(df_hbn_instruments[df_hbn_instruments['id'] == id]['sii'].values[0])
+    #
+    #     base_path = os.path.dirname(os.path.realpath(__file__))
+    #     parquet_file_name = 'part-0.parquet'
+    #     parquet_file_path = os.path.join(base_path, 'Dataset', 'series_train.parquet', 'id=' + id, parquet_file_name)
+    #
+    #     if os.path.exists(parquet_file_path):
+    #
+    #         df_motion = pd.read_parquet(parquet_file_path, engine='pyarrow')
+    #
+    #         motion_x = df_motion['X']
+    #         motion_y = df_motion['Y']
+    #         motion_z = df_motion['Z']
+    #         motion＿xyz = np.sqrt(motion_x ** 2 + motion_y ** 2 + motion_z ** 2)
+    #
+    #         # df_dataset.loc[len(df_dataset)] = [motion_x, motion_y, motion_z, label]
+    #         df_dataset.loc[len(df_dataset)] = [motion＿xyz, label]
+    #
+    #         # file_count+=1
+    #
+    #     # x = df_dataset['Motion_XYX']
+    #     # y = df_dataset['Label']
+    #
+    #     # X_train, X_test, y_train, y_test = train_test_split(x, y)
+    #     print('Finish Data Loading')
+    #
+    #     return X_train, X_test, y_train, y_test
 
 def build_CNN_model(train_X, train_y, test_X, test_y):
+    print('Start Building NN Model!')
     tf.random.set_seed(42)
 
     # Create model
@@ -70,7 +109,13 @@ def build_CNN_model(train_X, train_y, test_X, test_y):
 
 if __name__ == '__main__':
 
-    train_X, test_X, train_y, test_y = set_dataset()
+    dataset_train = set_dataset('Train')
+    dataset_test = set_dataset('Test')
+    train_X = dataset_train['Motion_XYX']
+    train_y = dataset_train['Label']
+    test_X = dataset_test['Motion_XYX']
+    test_y = dataset_test['Label']
+
     build_CNN_model(train_X, test_X, train_y, test_y)
 
 
